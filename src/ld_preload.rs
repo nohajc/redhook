@@ -60,3 +60,21 @@ macro_rules! real {
         $real_fn.get()
     };
 }
+
+#[macro_export]
+macro_rules! real2 {
+    ($real_fn:ident) => {{
+        use ::std::sync::Once;
+        let mut res_fn = &$real_fn;
+
+        static mut REAL: *const u8 = 0 as *const u8;
+        static mut ONCE: Once = Once::new();
+
+        ONCE.call_once(|| {
+            REAL = $crate::ld_preload::dlsym_next(concat!(stringify!($real_fn), "\0"));
+        });
+        res_fn = ::std::mem::transmute(REAL);
+
+        res_fn
+    }};
+}
